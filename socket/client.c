@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <resolv.h>
+#include <unistd.h>
 #include "packet.h"
 
 int protocol;
@@ -92,7 +93,12 @@ int read_from_fd(int fd, char* buf, int max_len)
 }
 int Write(int fd, char* buf, int max_len)
 {
-	return write(fd, buf, max_len);
+	int a;
+	if(a = write(fd, buf, max_len)<0) {
+		perror("Write");
+		exit(errno);
+	}
+	return a;
 };
 
 uint16_t checksum(struct packet p)
@@ -151,13 +157,54 @@ int hello(int sockfd)
 }
 void protocol1(int sockfd)
 {
-	char buf[2048];
-	char message_buf[4096];
+	char buf[2049];
+	char message_buf[4100];
 	int nbuff = 0, nmessage = 0;
-
+	char wb;
 	while(1)
 	{
-		read(STDIN_FILENO, 
+		if(read(STDIN_FILENO, &wb, 1) == 0)
+		{
+			message_buf[nmessage++] = '\\';
+			message_buf[nmessage++] = '0';
+			Write(sockfd, message_buf, nmessage);
+			break;
+		}
+		if(wb=='\\')
+		{
+			buf[nbuff++] = wb;
+			message_buf[nmessage++] = '\\';
+			message_buf[nmessage++] = '\\';
+		}
+		else
+		{
+			buf[nbuff++] = wb;
+			message_buf[nmessage++] = wb;
+		}
+		if(nbuff == 2048)
+		{
+			Write(sockfd, message_buf, nmessage);
+			memset(buf, 0, sizeof(buf));
+			memset(message_buf, 0, sizeof(message_buf));
+			nbuff = 0;
+			nmessage = 0;
+		}
+	}
+	while(1)
+	{
+		if((nbuff = read(sockfd, buf, 2048)) == 0)
+		{
+			break;
+		}
+		int i;
+		for(i=0;i<nbuff;i++)
+		{
+			if(buf[i]=='\\' && buf[i+1]=='0')
+			{
+				exit(0);
+			}
+			Write(STDOUT_FILENO, buf+i, 1);
+		}
 	}
 }
 void protocol2(int sockfd)
