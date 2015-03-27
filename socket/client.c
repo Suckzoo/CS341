@@ -239,21 +239,6 @@ void protocol2(int sockfd)
 		nbuff = read(sockfd, a, 20);
 		Write(STDOUT_FILENO, a, nbuff);
 	}
-//	while(1)
-//	{
-//		nbuff = read(sockfd, buff, nmessage);
-//		int i;
-//		for(i=0;i<nbuff;i++)
-//		{
-//			if(buff[i]=='\\' && buff[i+1]=='0')
-//			{
-//				exit(0);
-//			}
-//			Write(STDOUT_FILENO, buff+i, 1);
-//		}
-//		nmessage-=nbuff;
-//		fprintf(stderr, "%d %d\n", nbuff, nmessage);
-//	}
 }
 int main(int argc, char** argv)
 {

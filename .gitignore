@@ -33,3 +33,10 @@
 
 # Debug files
 *.dSYM/
+
+out
+client
+server
+*.jpg
+*.out
+*.txt
