@@ -139,8 +139,8 @@ int hello(int sockfd)
 		recv_buf_len += read_from_fd(sockfd, buf, 8);
 	}
 	p = *((struct packet*)buf);
-	p.sum = ntohs(p.sum);
-	p.transid = ntohl(p.transid);
+	p.sum = p.sum;
+	p.transid = p.transid;
 	if(is_valid_hello(p))
 	{
 		close(sockfd);
@@ -150,8 +150,8 @@ int hello(int sockfd)
 	p.op = 1;
 	p.proto = protocol;
 	p.sum = checksum(p);
-	p.transid = htonl(p.transid);
-	p.sum = htons(p.sum);
+	p.transid = (p.transid);
+	p.sum = (p.sum);
 	Write(sockfd, (char*)&p, 8);
 	return 0;
 }
@@ -163,7 +163,7 @@ void protocol1(int sockfd)
 	char wb;
 	while(1)
 	{
-		if(read(STDIN_FILENO, &wb, 1) == 0)
+		if(read(STDIN_FILENO, &wb, 1) <= 0)
 		{
 			message_buf[nmessage++] = '\\';
 			message_buf[nmessage++] = '0';
@@ -192,7 +192,7 @@ void protocol1(int sockfd)
 	}
 	while(1)
 	{
-		if((nbuff = read(sockfd, buf, 2048)) == 0)
+		if((nbuff = read(sockfd, buf, 2048)) <= 0)
 		{
 			break;
 		}
@@ -209,6 +209,51 @@ void protocol1(int sockfd)
 }
 void protocol2(int sockfd)
 {
+	char* buff;
+	buff = (char*)malloc(2048);
+	int nbuff=0, nmessage=0;
+	while((nbuff = read(STDIN_FILENO, buff+nmessage, 2048)) > 0)
+	{
+		if(nbuff<2048)
+		{
+			nmessage += nbuff;
+			break;
+		}
+		else
+		{
+			nmessage += 2048;
+			buff = realloc(buff, nmessage + 2048);
+		}
+	}
+	uint32_t n_nmessage = htonl(nmessage);
+	write(sockfd, &n_nmessage, sizeof(uint32_t));
+	write(sockfd, buff, nmessage);
+	memset(buff, 0, sizeof(buff));
+	read(sockfd, &n_nmessage, sizeof(int));
+	nmessage = ntohl(n_nmessage);
+	free(buff);
+	int i;
+	char a[60];
+	for(i=0;i<nmessage;i+=20)
+	{
+		nbuff = read(sockfd, a, 20);
+		Write(STDOUT_FILENO, a, nbuff);
+	}
+//	while(1)
+//	{
+//		nbuff = read(sockfd, buff, nmessage);
+//		int i;
+//		for(i=0;i<nbuff;i++)
+//		{
+//			if(buff[i]=='\\' && buff[i+1]=='0')
+//			{
+//				exit(0);
+//			}
+//			Write(STDOUT_FILENO, buff+i, 1);
+//		}
+//		nmessage-=nbuff;
+//		fprintf(stderr, "%d %d\n", nbuff, nmessage);
+//	}
 }
 int main(int argc, char** argv)
 {
