@@ -219,7 +219,8 @@ void protocol1(int sockfd)
 				
 				if(buf[i]=='\\' && buf[i+1]=='0')
 				{
-					break;
+					i++;
+					continue;
 				}
 				if(buf[i]=='\\') i++;
 				if(i==nbuff) Write(STDOUT_FILENO, "\\", 1);
