@@ -124,8 +124,8 @@ void protocol1(int sockfd)
 	int size;
 	int i;
 	memset(nbuf, 0, sizeof(nbuf));
-	while(1)
-	{
+	//while(1)
+	//{
 		memset(buf, 0, sizeof(buf));
 		size = read(sockfd, buf, 2048);
 		if(size<=0)
@@ -135,7 +135,8 @@ void protocol1(int sockfd)
 			init_commit[sockfd] = 0;
 			protocol[sockfd] = 0;
 			last_char[sockfd] = -1;
-			break;
+			return;
+			//break;
 		}
 		for(i=0;i<size;i++)
 		{
@@ -195,7 +196,7 @@ void protocol1(int sockfd)
 		rio_writen(sockfd, nbuf, ns);
 		memset(nbuf, 0, sizeof(nbuf));
 		ns = 0;
-	}
+	//}
 }
 void protocol2(int sockfd)
 {
