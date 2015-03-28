@@ -91,11 +91,10 @@ int gethello(int sockfd)
 	{
 		close(sockfd);
 		FD_CLR(sockfd, &readfds);
-		printf("[Server]invalid packet received\n");
+		//printf("[Server]invalid packet received\n");
 		return -1;
 	}
 	protocol[sockfd] = p.proto;
-	fprintf(stderr, "Communicate with %d protocol.", protocol[sockfd]);
 	return 0;
 }
 void redundancy2(int sockfd, char *buf, int size)
@@ -112,7 +111,6 @@ void redundancy2(int sockfd, char *buf, int size)
 			last_char[sockfd] = buf[i];
 		}
 	}
-	fprintf(stderr, "%d, %d, %d", ns, (int)buf[size-1], (int)nbuf[ns-1]);
 	int n_ns = htonl(ns);
 	rio_writen(sockfd, (char*)&n_ns, 4); 
 	rio_writen(sockfd, nbuf, ns);
@@ -120,7 +118,84 @@ void redundancy2(int sockfd, char *buf, int size)
 }
 void protocol1(int sockfd)
 {
-
+	char buf[2500];
+	char nbuf[2500];
+	int ns=0;
+	int size;
+	int i;
+	memset(nbuf, 0, sizeof(nbuf));
+	while(1)
+	{
+		memset(buf, 0, sizeof(buf));
+		size = read(sockfd, buf, 2048);
+		if(size<=0)
+		{
+			close(sockfd);
+			FD_CLR(sockfd, &readfds);
+			init_commit[sockfd] = 0;
+			protocol[sockfd] = 0;
+			last_char[sockfd] = -1;
+			break;
+		}
+		for(i=0;i<size;i++)
+		{
+			if(init_commit[sockfd] == 0)
+			{
+				if(buf[i]=='\\')
+				{
+					init_commit[sockfd] = 2;
+				}
+				else
+				{
+					last_char[sockfd] = buf[i];
+					init_commit[sockfd] = 1;
+					nbuf[ns++] = buf[i];
+				}
+			}
+			else if(init_commit[sockfd] == 1)
+			{
+				if(buf[i]=='\\')
+				{
+					init_commit[sockfd] = 2;
+				}
+				else if(buf[i]!=last_char[sockfd])
+				{
+					last_char[sockfd] = buf[i];
+					nbuf[ns++] = buf[i];
+				}
+			}
+			else if(init_commit[sockfd] == 2)
+			{
+				if(buf[i]=='\\')
+				{
+					init_commit[sockfd] = 1;
+					if(last_char[sockfd]!='\\') {
+						last_char[sockfd] = '\\';
+						nbuf[ns++] = '\\';
+						nbuf[ns++] = '\\';
+					}
+				}
+				else if(buf[i]=='0')
+				{
+					init_commit[sockfd] = 1;
+				}
+				else
+				{
+					close(sockfd);
+					FD_CLR(sockfd, &readfds);
+					init_commit[sockfd] = 0;
+					protocol[sockfd] = 0;
+					last_char[sockfd] = -1;
+					return;
+				}
+			}
+		}
+		nbuf[ns++] = '\\';
+		nbuf[ns++] = '0';
+		rio_writen(sockfd, nbuf, ns);
+		memset(nbuf, 0, sizeof(nbuf));
+		ns = 0;
+	}
 }
 void protocol2(int sockfd)
 {
@@ -191,7 +266,7 @@ int main(int argc, char **argv)
 	while(1)
 	{
 		allfds = readfds;
-		printf("Select Wait %d\n", maxfd);
+		//printf("Select Wait %d\n", maxfd);
 		fd_num = select(maxfd + 1 , &allfds, (fd_set *)0,
 					  (fd_set *)0, NULL);
 
@@ -205,7 +280,7 @@ int main(int argc, char **argv)
 
 			if (client_fd > maxfd)
 				maxfd = client_fd;
-			printf("Accept OK\n");
+			//printf("Accept OK\n");
 			sayhello(client_fd);
 			continue;
 		}

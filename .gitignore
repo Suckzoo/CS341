@@ -35,6 +35,7 @@
 *.dSYM/
 
 out
+aaa
 client
 server
 *.jpg
