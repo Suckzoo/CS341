@@ -6,6 +6,7 @@
 #include <resolv.h>
 #include <unistd.h>
 #include "packet.h"
+#include "rio.h"
 
 int protocol;
 char host[16];
@@ -86,15 +87,15 @@ int read_from_fd(int fd, char* buf, int max_len)
 	}
 	return i;
 }
-int Write(int fd, char* buf, int max_len)
-{
-	int a;
-	if(a = write(fd, buf, max_len)<0) {
-		perror("Write");
-		exit(errno);
-	}
-	return a;
-}
+//int Write(int fd, char* buf, int max_len)
+//{
+//	int a;
+//	if(a = write(fd, buf, max_len)<0) {
+//		perror("Write");
+//		exit(errno);
+//	}
+//	return a;
+//}
 
 uint16_t checksum(struct packet p)
 {
@@ -147,7 +148,7 @@ int hello(int sockfd)
 	p.sum = checksum(p);
 	p.transid = (p.transid);
 	p.sum = (p.sum);
-	Write(sockfd, (char*)&p, 8);
+	rio_writen(sockfd, (char*)&p, 8);
 	return 0;
 }
 void protocol1(int sockfd)
@@ -163,7 +164,7 @@ void protocol1(int sockfd)
 		{
 			message_buf[nmessage++] = '\\';
 			message_buf[nmessage++] = '0';
-			Write(sockfd, message_buf, nmessage);
+			rio_writen(sockfd, message_buf, nmessage);
 			memset(buf, 0, sizeof(buf));
 			memset(message_buf, 0, sizeof(message_buf));
 			nbuff = 0;
@@ -202,7 +203,7 @@ void protocol1(int sockfd)
 		}
 		message_buf[nmessage++] = '\\';
 		message_buf[nmessage++] = '0';
-		Write(sockfd, message_buf, nmessage);
+		rio_writen(sockfd, message_buf, nmessage);
 		memset(buf, 0, sizeof(buf));
 		memset(message_buf, 0, sizeof(message_buf));
 		nbuff = 0;
@@ -233,33 +234,25 @@ void protocol2(int sockfd)
 	char* buff;
 	buff = (char*)malloc(2048);
 	int nbuff=0, nmessage=0;
-	while((nbuff = read(STDIN_FILENO, buff+nmessage, 2048)) > 0)
+	while((nbuff = read(STDIN_FILENO, buff, 2048)) > 0)
 	{
-		if(nbuff<2048)
-		{
-			nmessage += nbuff;
-			break;
-		}
-		else
-		{
-			nmessage += 2048;
-			buff = realloc(buff, nmessage + 2048);
-		}
+		uint32_t n_nbuff = htonl(nbuff);
+		write(sockfd, &n_nbuff, sizeof(uint32_t));
+		write(sockfd, buff, nbuff);
+		memset(buff, 0, sizeof(buff));
+		read(sockfd, &n_nbuff, sizeof(int));
+		nbuff = ntohl(n_nbuff);
+		rio_readn(sockfd, buff, nbuff);
+		rio_writen(STDOUT_FILENO, buff, nbuff);
+		//int i;
+		//char a[60];
+		//for(i=0;i<nmessage;i+=20)
+		//{
+		//	nbuff = read(sockfd, a, 20);
+		//	Write(STDOUT_FILENO, a, nbuff);
+		//}	
 	}
-	uint32_t n_nmessage = htonl(nmessage);
-	write(sockfd, &n_nmessage, sizeof(uint32_t));
-	write(sockfd, buff, nmessage);
-	memset(buff, 0, sizeof(buff));
-	read(sockfd, &n_nmessage, sizeof(int));
-	nmessage = ntohl(n_nmessage);
 	free(buff);
-	int i;
-	char a[60];
-	for(i=0;i<nmessage;i+=20)
-	{
-		nbuff = read(sockfd, a, 20);
-		Write(STDOUT_FILENO, a, nbuff);
-	}
 }
 int main(int argc, char** argv)
 {
