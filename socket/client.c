@@ -174,7 +174,7 @@ void protocol1(int sockfd)
 			nmessage = 0;
 			while(1)
 			{
-				if((nbuff = read(sockfd, buf, sizeof(message_buf))) <= 0)
+				if((nbuff = read(sockfd, buf, sizeof(buf))) <= 0)
 				{
 					break;
 				}
@@ -216,7 +216,7 @@ void protocol1(int sockfd)
 			nmessage = 0;
 			while(1)
 			{
-				if((nbuff = read(sockfd, buf, sizeof(message_buf))) <= 0)
+				if((nbuff = read(sockfd, buf, sizeof(buf))) <= 0)
 				{
 					break;
 				}
