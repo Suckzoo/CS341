@@ -157,8 +157,8 @@ int hello(int sockfd)
 }
 void protocol1(int sockfd)
 {
-	char buf[2049];
-	char message_buf[4100];
+	char buf[1024];
+	char message_buf[3000];
 	int nbuff = 0, nmessage = 0;
 	char wb;
 	while(1)
@@ -168,6 +168,30 @@ void protocol1(int sockfd)
 			message_buf[nmessage++] = '\\';
 			message_buf[nmessage++] = '0';
 			Write(sockfd, message_buf, nmessage);
+			memset(buf, 0, sizeof(buf));
+			memset(message_buf, 0, sizeof(message_buf));
+			nbuff = 0;
+			nmessage = 0;
+			while(1)
+			{
+				if((nbuff = read(sockfd, buf, sizeof(message_buf))) <= 0)
+				{
+					break;
+				}
+				int i;
+				for(i=0;i<nbuff;i++)
+				{
+					
+					if(buf[i]=='\\' && buf[i+1]=='0')
+					{
+						break;
+					}
+					if(buf[i]=='\\') i++;
+					if(i==nbuff) Write(STDOUT_FILENO, "\\", 1);
+					else Write(STDOUT_FILENO, buf+i, 1);
+				}
+				if(i<nbuff) break;
+			}
 			break;
 		}
 		if(wb=='\\')
@@ -181,29 +205,35 @@ void protocol1(int sockfd)
 			buf[nbuff++] = wb;
 			message_buf[nmessage++] = wb;
 		}
-		if(nbuff == 2048)
+		if(nbuff == 1000)
 		{
+			message_buf[nmessage++] = '\\';
+			message_buf[nmessage++] = '0';
 			Write(sockfd, message_buf, nmessage);
 			memset(buf, 0, sizeof(buf));
 			memset(message_buf, 0, sizeof(message_buf));
 			nbuff = 0;
 			nmessage = 0;
-		}
-	}
-	while(1)
-	{
-		if((nbuff = read(sockfd, buf, 2048)) <= 0)
-		{
-			break;
-		}
-		int i;
-		for(i=0;i<nbuff;i++)
-		{
-			if(buf[i]=='\\' && buf[i+1]=='0')
+			while(1)
 			{
-				exit(0);
+				if((nbuff = read(sockfd, buf, sizeof(message_buf))) <= 0)
+				{
+					break;
+				}
+				int i;
+				for(i=0;i<nbuff;i++)
+				{
+					
+					if(buf[i]=='\\' && buf[i+1]=='0')
+					{
+						break;
+					}
+					if(buf[i]=='\\') i++;
+					if(i==nbuff) Write(STDOUT_FILENO, "\\", 1);
+					else Write(STDOUT_FILENO, buf+i, 1);
+				}
+				if(i<nbuff) break;
 			}
-			Write(STDOUT_FILENO, buf+i, 1);
 		}
 	}
 }
