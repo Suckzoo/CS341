@@ -157,13 +157,14 @@ int hello(int sockfd)
 }
 void protocol1(int sockfd)
 {
-	char buf[1024];
+	char buf[3000];
 	char message_buf[3000];
 	int nbuff = 0, nmessage = 0;
 	char wb;
+	int i;
 	while(1)
 	{
-		if(read(STDIN_FILENO, &wb, 1) <= 0)
+		if((nbuff = read(STDIN_FILENO, buf, 2000)) <= 0)
 		{
 			message_buf[nmessage++] = '\\';
 			message_buf[nmessage++] = '0';
@@ -178,7 +179,6 @@ void protocol1(int sockfd)
 				{
 					break;
 				}
-				int i;
 				for(i=0;i<nbuff;i++)
 				{
 					
@@ -194,46 +194,42 @@ void protocol1(int sockfd)
 			}
 			break;
 		}
-		if(wb=='\\')
-		{
-			buf[nbuff++] = wb;
-			message_buf[nmessage++] = '\\';
-			message_buf[nmessage++] = '\\';
-		}
-		else
-		{
-			buf[nbuff++] = wb;
-			message_buf[nmessage++] = wb;
-		}
-		if(nbuff == 1000)
-		{
-			message_buf[nmessage++] = '\\';
-			message_buf[nmessage++] = '0';
-			Write(sockfd, message_buf, nmessage);
-			memset(buf, 0, sizeof(buf));
-			memset(message_buf, 0, sizeof(message_buf));
-			nbuff = 0;
-			nmessage = 0;
-			while(1)
+		for(i=0;i<nbuff;i++) {
+			if(buf[i]=='\\')
 			{
-				if((nbuff = read(sockfd, buf, sizeof(buf))) <= 0)
+				message_buf[nmessage++] = '\\';
+				message_buf[nmessage++] = '\\';
+			}
+			else
+			{
+				message_buf[nmessage++] = buf[i];
+			}
+		}
+		message_buf[nmessage++] = '\\';
+		message_buf[nmessage++] = '0';
+		Write(sockfd, message_buf, nmessage);
+		memset(buf, 0, sizeof(buf));
+		memset(message_buf, 0, sizeof(message_buf));
+		nbuff = 0;
+		nmessage = 0;
+		while(1)
+		{
+			if((nbuff = read(sockfd, buf, sizeof(buf))) <= 0)
+			{
+				break;
+			}
+			for(i=0;i<nbuff;i++)
+			{
+				
+				if(buf[i]=='\\' && buf[i+1]=='0')
 				{
 					break;
 				}
-				int i;
-				for(i=0;i<nbuff;i++)
-				{
-					
-					if(buf[i]=='\\' && buf[i+1]=='0')
-					{
-						break;
-					}
-					if(buf[i]=='\\') i++;
-					if(i==nbuff) Write(STDOUT_FILENO, "\\", 1);
-					else Write(STDOUT_FILENO, buf+i, 1);
-				}
-				if(i<nbuff) break;
+				if(buf[i]=='\\') i++;
+				if(i==nbuff) Write(STDOUT_FILENO, "\\", 1);
+				else Write(STDOUT_FILENO, buf+i, 1);
 			}
+			if(i<nbuff) break;
 		}
 	}
 }
