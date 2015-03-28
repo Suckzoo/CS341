@@ -65,11 +65,6 @@ int initialize(int* sockfd, struct sockaddr_in* dest, char* host, uint16_t port)
 	dest->sin_family = AF_INET;
 	dest->sin_port = htons(port);
 	dest->sin_addr.s_addr = inet_addr(host);
-	/*if(inet_aton(host, dest->sin_addr.s_addr) == 0)
-	{
-		perror(host);
-		exit(errno);
-	}*/
 	if(connect(*sockfd, (struct sockaddr*)dest, sizeof(*dest)) != 0)
 	{
 		perror("Connect");
@@ -99,7 +94,7 @@ int Write(int fd, char* buf, int max_len)
 		exit(errno);
 	}
 	return a;
-};
+}
 
 uint16_t checksum(struct packet p)
 {
